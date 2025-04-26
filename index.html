@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>History</title>
+
+<link rel="stylesheet" href="H.css" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button, select { margin: 5px; padding: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+
+  <h2>History</h2>
+
+  <label>From: <input type="date" id="fromDate"></label>
+  <label>To: <input type="date" id="toDate"></label>
+  <button onclick="filterHistory()">FIND</button>
+
+  <input type="text" id="searchInvoice" placeholder="Search Invoice ID">
+  <button onclick="searchHistory()">Search History</button>
+
+  <table id="historyTable">
+    <thead>
+      <tr>
+        <th>InvoiceID</th>
+        <th>ItemName</th>
+        <th>Description</th>
+        <th>Price</th>
+        <th>Quantity</th>
+        <th>Discount</th>
+        <th>Total</th>
+        <th>DateTime</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCddKRuTHpHtaQ0rLOkMOAb5q6slJ3-ybs",
+      authDomain: "project-29b6a.firebaseapp.com",
+      projectId: "project-29b6a",
+      storageBucket: "project-29b6a.appspot.com",
+      messagingSenderId: "731238594321",
+      appId: "1:731238594321:web:71c168ad6f35df2944feb0",
+      measurementId: "G-009NX2LKRX",
+      databaseURL: "https://project-29b6a-default-rtdb.firebaseio.com/"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let allHistoryData = [];
+
+    function loadHistory() {
+      const historyRef = ref(db, "history");
+      onValue(historyRef, (snapshot) => {
+        const data = snapshot.val();
+        const tableBody = document.querySelector("#historyTable tbody");
+        tableBody.innerHTML = '';
+        allHistoryData = [];
+
+        for (let id in data) {
+          const item = data[id];
+          allHistoryData.push(item);
+          addToTable(item);
+        }
+      });
+    }
+
+    function formatDateTime(isoString) {
+      const date = new Date(isoString);
+      return date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(',', '');
+    }
+
+    function addToTable(item) {
+      const tableBody = document.querySelector("#historyTable tbody");
+      const row = document.createElement("tr");
+
+      const formattedDate = formatDateTime(item.DateTime);
+
+      row.innerHTML = `
+        <td>${item.InvoiceID}</td>
+        <td>${item.ItemName}</td>
+        <td>${item.Description}</td>
+        <td>${item.Price}</td>
+        <td>${item.Quantity}</td>
+        <td>${item.Discount}</td>
+        <td>${item.Total}</td>
+        <td>${formattedDate}</td>
+      `;
+      tableBody.appendChild(row);
+    }
+
+    window.searchHistory = function () {
+      const keyword = document.getElementById("searchInvoice").value.trim().toLowerCase();
+      const tableBody = document.querySelector("#historyTable tbody");
+      tableBody.innerHTML = '';
+
+      allHistoryData.forEach((item) => {
+        if (item.InvoiceID.toLowerCase().includes(keyword)) {
+          addToTable(item);
+        }
+      });
+    };
+
+    window.filterHistory = function () {
+      const fromDate = document.getElementById("fromDate").value;
+      const toDate = document.getElementById("toDate").value;
+      const tableBody = document.querySelector("#historyTable tbody");
+      tableBody.innerHTML = '';
+
+      allHistoryData.forEach((item) => {
+        const itemDate = new Date(item.DateTime).toISOString().split('T')[0];
+        if (itemDate >= fromDate && itemDate <= toDate) {
+          addToTable(item);
+        }
+      });
+    };
+
+    window.onload = loadHistory;
+  </script>
+
+</body>
+</html>
